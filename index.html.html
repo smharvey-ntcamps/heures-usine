@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rapport Heures Usine — Camps NT</title>
+<style>
+  :root {
+    --vert: #0f6973;
+    --vert-clair: #e8f4f5;
+    --saumon: #e87060;
+    --gris-fond: #f7f8f8;
+    --gris-bord: #dde3e4;
+    --gris-texte: #5a6a6b;
+    --noir: #1a2526;
+    --blanc: #ffffff;
+    --succes: #2e7d52;
+    --erreur: #c0392b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--gris-fond); color: var(--noir); min-height: 100vh; }
+
+  header {
+    background: var(--vert); color: var(--blanc);
+    padding: 16px 32px; display: flex; align-items: center; gap: 14px;
+    box-shadow: 0 2px 8px rgba(15,105,115,0.18);
+  }
+  header h1 { font-size: 1.1rem; font-weight: 600; }
+  header span { font-size: 0.8rem; opacity: 0.7; margin-left: 4px; }
+
+  .container { max-width: 900px; margin: 0 auto; padding: 32px 20px 60px; }
+
+  .card { background: var(--blanc); border: 1px solid var(--gris-bord); border-radius: 10px; padding: 28px; margin-bottom: 20px; }
+  .card-title { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--vert); margin-bottom: 18px; }
+
+  label { display: block; font-size: 0.82rem; font-weight: 600; color: var(--gris-texte); margin-bottom: 5px; }
+  input[type="date"], input[type="text"] {
+    width: 100%; padding: 9px 12px; border: 1.5px solid var(--gris-bord);
+    border-radius: 6px; font-size: 0.9rem; color: var(--noir); background: var(--blanc);
+    transition: border-color 0.15s; outline: none;
+  }
+  input:focus { border-color: var(--vert); }
+  .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .field { margin-bottom: 14px; }
+  .hint { font-size: 0.75rem; color: var(--gris-texte); margin-top: 4px; }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 10px 20px; border-radius: 7px; font-size: 0.88rem; font-weight: 600;
+    cursor: pointer; border: none; transition: opacity 0.15s, transform 0.1s; text-decoration: none;
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .btn-primary { background: var(--vert); color: var(--blanc); }
+  .btn-primary:hover:not(:disabled) { opacity: 0.88; }
+  .btn-agendrix { background: #e87060; color: var(--blanc); font-size: 0.95rem; padding: 13px 28px; }
+  .btn-agendrix:hover { opacity: 0.88; }
+  .btn-excel { background: #1e6f3e; color: var(--blanc); }
+  .btn-excel:hover:not(:disabled) { opacity: 0.88; }
+  .btn-secondary { background: var(--gris-fond); color: var(--vert); border: 1.5px solid var(--gris-bord); }
+  .btn-deconnexion { background: transparent; color: var(--gris-texte); border: 1.5px solid var(--gris-bord); font-size: 0.8rem; padding: 7px 14px; }
+
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 20px; }
+
+  .alerte { padding: 11px 14px; border-radius: 7px; font-size: 0.83rem; margin-bottom: 16px; display: none; }
+  .alerte.visible { display: flex; align-items: flex-start; gap: 8px; }
+  .alerte-info { background: var(--vert-clair); color: var(--vert); border: 1px solid #b2d8db; }
+  .alerte-erreur { background: #fdf0ef; color: var(--erreur); border: 1px solid #f5c6c2; }
+
+  /* Écran de connexion */
+  .login-screen {
+    text-align: center; padding: 48px 28px;
+  }
+  .login-logo { margin-bottom: 24px; }
+  .login-screen h2 { font-size: 1.3rem; color: var(--noir); margin-bottom: 8px; }
+  .login-screen p { color: var(--gris-texte); font-size: 0.9rem; margin-bottom: 32px; line-height: 1.6; }
+  .login-env { display: flex; justify-content: center; gap: 16px; margin-bottom: 28px; }
+  .login-env label { display: flex; align-items: center; gap: 6px; font-weight: 500; cursor: pointer; color: var(--noir); font-size: 0.88rem; }
+
+  /* Statut connexion */
+  .connexion-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    background: #edf7f1; border: 1px solid #b2dcc4; border-radius: 8px;
+    padding: 12px 16px; margin-bottom: 20px;
+  }
+  .connexion-bar .user-info { display: flex; align-items: center; gap: 10px; }
+  .connexion-dot { width: 10px; height: 10px; background: var(--succes); border-radius: 50%; flex-shrink: 0; }
+  .connexion-nom { font-weight: 600; font-size: 0.88rem; color: #1a3a2a; }
+  .connexion-env { font-size: 0.75rem; color: #2e7d52; }
+
+  .resume-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+  .stat-box { background: var(--vert-clair); border-radius: 8px; padding: 14px 16px; text-align: center; }
+  .stat-val { font-size: 1.6rem; font-weight: 700; color: var(--vert); line-height: 1; }
+  .stat-lbl { font-size: 0.73rem; color: var(--gris-texte); margin-top: 4px; }
+
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
+  thead th { background: var(--vert); color: var(--blanc); padding: 10px 12px; text-align: left; font-weight: 600; font-size: 0.77rem; letter-spacing: 0.03em; white-space: nowrap; }
+  thead th:first-child { border-radius: 6px 0 0 0; }
+  thead th:last-child { border-radius: 0 6px 0 0; text-align: right; }
+  tbody tr { border-bottom: 1px solid var(--gris-bord); }
+  tbody tr:hover { background: var(--vert-clair); }
+  tbody td { padding: 9px 12px; white-space: nowrap; }
+  tbody td.heures { font-weight: 600; color: var(--vert); text-align: right; }
+  tbody td.projet { color: var(--gris-texte); font-size: 0.8rem; }
+  .badge-total { display: inline-block; background: var(--vert); color: var(--blanc); font-size: 0.72rem; font-weight: 700; padding: 2px 7px; border-radius: 20px; }
+
+  .loader { display: none; align-items: center; gap: 10px; color: var(--gris-texte); font-size: 0.85rem; padding: 10px 0; }
+  .loader.visible { display: flex; }
+  .spinner { width: 18px; height: 18px; border: 2.5px solid var(--gris-bord); border-top-color: var(--vert); border-radius: 50%; animation: spin 0.7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .section-results { display: none; }
+  .section-results.visible { display: block; }
+
+  .env-badge { display: inline-block; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 12px; margin-left: 8px; vertical-align: middle; }
+  .env-sandbox { background: #fff3cd; color: #856404; }
+  .env-prod { background: #d1e7dd; color: #0a3622; }
+
+  @media (max-width: 600px) {
+    .row-2 { grid-template-columns: 1fr; }
+    .resume-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+    <rect width="28" height="28" rx="7" fill="rgba(255,255,255,0.15)"/>
+    <path d="M7 20V10l7-4 7 4v10" stroke="white" stroke-width="1.8" stroke-linejoin="round"/>
+    <rect x="11" y="14" width="6" height="6" rx="1" stroke="white" stroke-width="1.6"/>
+  </svg>
+  <div><h1>Rapport Heures Usine <span>— Camps NT</span></h1></div>
+</header>
+
+<div class="container">
+
+  <!-- ÉCRAN DE CONNEXION -->
+  <div class="card" id="ecran-connexion">
+    <div class="login-screen">
+      <div class="login-logo">
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+          <rect width="48" height="48" rx="12" fill="#e8f4f5"/>
+          <path d="M12 36V18l12-7 12 7v18" stroke="#0f6973" stroke-width="2.5" stroke-linejoin="round"/>
+          <rect x="18" y="24" width="12" height="12" rx="2" stroke="#0f6973" stroke-width="2.2"/>
+        </svg>
+      </div>
+      <h2>Rapport Heures Usine</h2>
+      <p>Connecte-toi avec ton compte Agendrix pour accéder<br>aux données de pointage de l'usine.</p>
+
+      <div class="login-env">
+        <label><input type="radio" name="env-login" value="sandbox" checked> Sandbox (test)</label>
+        <label><input type="radio" name="env-login" value="prod"> Production</label>
+      </div>
+
+      <button class="btn btn-agendrix" onclick="seConnecter()">
+        🔑 Se connecter avec Agendrix
+      </button>
+      <div style="margin-top:16px;">
+        <div class="hint" style="text-align:center;">Tu seras redirigé vers la page de connexion Agendrix, puis ramené ici automatiquement.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BARRE CONNEXION (après auth) -->
+  <div class="connexion-bar" id="barre-connexion" style="display:none;">
+    <div class="user-info">
+      <div class="connexion-dot"></div>
+      <div>
+        <div class="connexion-nom" id="connexion-nom">Connecté</div>
+        <div class="connexion-env" id="connexion-env"></div>
+      </div>
+    </div>
+    <button class="btn btn-deconnexion" onclick="seDeconnecter()">Déconnexion</button>
+  </div>
+
+  <!-- ALERTES -->
+  <div class="alerte alerte-erreur" id="alerte-erreur">
+    <span>⚠️</span><span id="alerte-erreur-msg"></span>
+  </div>
+  <div class="alerte alerte-info" id="alerte-info">
+    <span>ℹ️</span><span id="alerte-info-msg"></span>
+  </div>
+
+  <!-- FORMULAIRE RAPPORT (après auth) -->
+  <div id="section-rapport" style="display:none;">
+
+    <div class="card">
+      <div class="card-title">📅 Période du rapport</div>
+      <div class="row-2">
+        <div class="field">
+          <label for="date-debut">Date de début</label>
+          <input type="date" id="date-debut">
+        </div>
+        <div class="field">
+          <label for="date-fin">Date de fin</label>
+          <input type="date" id="date-fin">
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">
+        <button class="btn btn-secondary" onclick="setPeriode('semaine')">Cette semaine</button>
+        <button class="btn btn-secondary" onclick="setPeriode('mois')">Ce mois</button>
+        <button class="btn btn-secondary" onclick="setPeriode('pp')">Période de paie (2 sem.)</button>
+      </div>
+
+      <div class="field" style="margin-top:18px;">
+        <label for="adresse-filtre">Mot-clé d'adresse pour l'usine</label>
+        <input type="text" id="adresse-filtre" value="Usine">
+        <div class="hint">Tous les lieux de travail dont l'adresse contient ce mot seront inclus.</div>
+      </div>
+    </div>
+
+    <div class="loader" id="loader">
+      <div class="spinner"></div>
+      <span id="loader-msg">Chargement...</span>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" id="btn-generer" onclick="genererRapport()">▶ Générer le rapport</button>
+      <button class="btn btn-excel" id="btn-excel" onclick="exporterExcel()" style="display:none;">⬇ Télécharger Excel</button>
+    </div>
+
+  </div>
+
+  <!-- RÉSULTATS -->
+  <div class="section-results" id="section-results" style="margin-top:24px;">
+    <div class="card">
+      <div class="card-title" id="titre-rapport">Résultats</div>
+      <div class="resume-grid" id="resume-grid"></div>
+      <div class="table-wrap">
+        <table id="tableau-heures">
+          <thead>
+            <tr>
+              <th>Employé</th>
+              <th>Projet (lieu de travail)</th>
+              <th>Date</th>
+              <th>Entrée</th>
+              <th>Sortie</th>
+              <th style="text-align:right;">Heures</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ─── CONFIG ───────────────────────────────────────────────────────────────────
+const CONFIG = {
+  sandbox: {
+    clientId: '8CBYfZPRr-YhbI_3I3CbS1z4rdoSX0g-8PyyYNch0Us',
+    clientSecret: '1idXqWKH120qNxv1iwBVDoxsTX36tAetE__FnJH9xu1Q',
+    authUrl: 'https://sandbox.agendrix.com/oauth/authorize',
+    tokenUrl: 'https://sandbox.agendrix.com/oauth/token',
+    apiUrl: 'https://api.sandbox.agendrix.net/v1',
+    redirectUri: 'https://developers.agendrix.com/playground',
+    label: 'Sandbox (test)'
+  },
+  prod: {
+    clientId: '0-jjng3S3zMa0HwjQXJEj0-nzhCAfdk98FgP5KHG4tw',
+    clientSecret: '',
+    authUrl: 'https://app.agendrix.com/oauth/authorize',
+    tokenUrl: 'https://app.agendrix.com/oauth/token',
+    apiUrl: 'https://api.agendrix.com/v1',
+    redirectUri: '',
+    label: 'Production'
+  }
+};
+
+// ─── ÉTAT ────────────────────────────────────────────────────────────────────
+let accessToken = null;
+let envActuel = 'sandbox';
+let donneesRapport = [];
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+window.onload = () => {
+  document.getElementById('date-debut').value = debutMois();
+  document.getElementById('date-fin').value = finMois();
+
+  // Vérifier si on revient d'un OAuth redirect
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('code');
+  const state = params.get('state');
+
+  if (code && state) {
+    const savedState = sessionStorage.getItem('oauth_state');
+    const savedEnv = sessionStorage.getItem('oauth_env');
+    if (state === savedState && savedEnv) {
+      envActuel = savedEnv;
+      // Nettoyer l'URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+      echangerCode(code);
+    }
+  } else {
+    // Vérifier si un token est déjà en session
+    const token = sessionStorage.getItem('agendrix_token');
+    const env = sessionStorage.getItem('agendrix_env');
+    if (token && env) {
+      accessToken = token;
+      envActuel = env;
+      afficherInterfaceConnectee();
+    }
+  }
+};
+
+// ─── OAUTH ───────────────────────────────────────────────────────────────────
+function seConnecter() {
+  const env = document.querySelector('input[name="env-login"]:checked').value;
+  envActuel = env;
+  const cfg = CONFIG[env];
+
+  if (!cfg.redirectUri) {
+    afficherErreur('La production n\'est pas encore configurée. Utilise la Sandbox pour tester.');
+    return;
+  }
+
+  // Générer un state aléatoire anti-CSRF
+  const state = Math.random().toString(36).substring(2, 15);
+  sessionStorage.setItem('oauth_state', state);
+  sessionStorage.setItem('oauth_env', env);
+
+  const authUrl = `${cfg.authUrl}?client_id=${encodeURIComponent(cfg.clientId)}&redirect_uri=${encodeURIComponent(cfg.redirectUri)}&response_type=code&scope=read&state=${state}`;
+  window.location.href = authUrl;
+}
+
+async function echangerCode(code) {
+  afficherLoader('Connexion en cours...');
+  cacherEcranConnexion();
+
+  const cfg = CONFIG[envActuel];
+  try {
+    const resp = await fetch(cfg.tokenUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        code: code,
+        client_id: cfg.clientId,
+        client_secret: cfg.clientSecret,
+        redirect_uri: cfg.redirectUri
+      })
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.error_description || `Erreur d'authentification (${resp.status})`);
+    }
+
+    const data = await resp.json();
+    accessToken = data.access_token;
+
+    // Sauvegarder en session
+    sessionStorage.setItem('agendrix_token', accessToken);
+    sessionStorage.setItem('agendrix_env', envActuel);
+    if (data.refresh_token) {
+      sessionStorage.setItem('agendrix_refresh', data.refresh_token);
+    }
+
+    cacherLoader();
+    afficherInterfaceConnectee();
+
+  } catch (e) {
+    cacherLoader();
+    afficherEcranConnexion();
+    afficherErreur('Erreur de connexion : ' + e.message);
+  }
+}
+
+function afficherInterfaceConnectee() {
+  document.getElementById('ecran-connexion').style.display = 'none';
+  document.getElementById('barre-connexion').style.display = 'flex';
+  document.getElementById('section-rapport').style.display = 'block';
+  document.getElementById('connexion-env').textContent = CONFIG[envActuel].label;
+
+  // Charger le nom de l'utilisateur
+  chargerUtilisateur();
+}
+
+async function chargerUtilisateur() {
+  try {
+    const data = await appelerAPI('/users/me');
+    const nom = data?.data?.full_name || data?.full_name || 'Connecté';
+    document.getElementById('connexion-nom').textContent = nom;
+  } catch (e) {
+    document.getElementById('connexion-nom').textContent = 'Connecté';
+  }
+}
+
+function seDeconnecter() {
+  accessToken = null;
+  sessionStorage.removeItem('agendrix_token');
+  sessionStorage.removeItem('agendrix_env');
+  sessionStorage.removeItem('agendrix_refresh');
+  sessionStorage.removeItem('oauth_state');
+  afficherEcranConnexion();
+  document.getElementById('barre-connexion').style.display = 'none';
+  document.getElementById('section-rapport').style.display = 'none';
+  document.getElementById('section-results').classList.remove('visible');
+  cacherAlertes();
+}
+
+function afficherEcranConnexion() { document.getElementById('ecran-connexion').style.display = 'block'; }
+function cacherEcranConnexion() { document.getElementById('ecran-connexion').style.display = 'none'; }
+
+// ─── API ─────────────────────────────────────────────────────────────────────
+async function appelerAPI(endpoint) {
+  if (!accessToken) throw new Error('Non connecté.');
+  const url = CONFIG[envActuel].apiUrl + endpoint;
+  const resp = await fetch(url, {
+    headers: { 'Authorization': `Bearer ${accessToken}`, 'Accept': 'application/json' }
+  });
+  if (resp.status === 401) {
+    seDeconnecter();
+    throw new Error('Session expirée. Reconnecte-toi.');
+  }
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(err?.errors?.[0]?.short_message || `Erreur HTTP ${resp.status}`);
+  }
+  return resp.json();
+}
+
+async function toutesLesPages(endpoint) {
+  let resultats = [];
+  let page = 1;
+  while (true) {
+    const sep = endpoint.includes('?') ? '&' : '?';
+    const data = await appelerAPI(`${endpoint}${sep}page=${page}&limit=100`);
+    resultats = resultats.concat(data.data || []);
+    if (data.pagination?.last_page || !data.pagination?.next_page) break;
+    page++;
+    if (page > 50) break; // sécurité
+  }
+  return resultats;
+}
+
+// ─── GÉNÉRATION ──────────────────────────────────────────────────────────────
+async function genererRapport() {
+  cacherAlertes();
+  const debut = document.getElementById('date-debut').value;
+  const fin = document.getElementById('date-fin').value;
+  const motCle = document.getElementById('adresse-filtre').value.trim().toLowerCase();
+
+  if (!debut || !fin) { afficherErreur('Choisis une date de début et de fin.'); return; }
+  if (debut > fin) { afficherErreur('La date de début doit être avant la date de fin.'); return; }
+
+  afficherLoader('Chargement des lieux de travail...');
+  document.getElementById('btn-generer').disabled = true;
+  document.getElementById('btn-excel').style.display = 'none';
+  document.getElementById('section-results').classList.remove('visible');
+
+  try {
+    // 1. Lieux de travail
+    const ressources = await toutesLesPages('/resources');
+
+    // 2. Filtrer par adresse
+    let ressourcesUsine = ressources.filter(r => {
+      const adresse = (r.address || '').toLowerCase();
+      return adresse.includes(motCle);
+    });
+
+    if (ressourcesUsine.length === 0) {
+      cacherLoader();
+      afficherInfo(`Aucun lieu de travail avec l'adresse contenant "${motCle}" (${ressources.length} ressource(s) trouvée(s) au total). Dans la sandbox, essaie de vider le filtre d'adresse pour tout voir.`);
+      document.getElementById('btn-generer').disabled = false;
+      return;
+    }
+
+    const idsUsine = new Set(ressourcesUsine.map(r => r.id));
+    const nomParId = {};
+    ressourcesUsine.forEach(r => { nomParId[r.id] = r.name; });
+
+    // 3. Clock logs
+    afficherLoader(`${ressourcesUsine.length} projet(s) trouvé(s) — chargement des entrées de temps...`);
+    const clockLogs = await toutesLesPages(`/clock_logs?search[start_date]=${debut}&search[end_date]=${fin}`);
+
+    // 4. Employés
+    afficherLoader('Chargement des employés...');
+    const employes = await toutesLesPages('/employees');
+    const nomEmployeParId = {};
+    employes.forEach(e => { nomEmployeParId[e.id] = `${e.last_name || ''}, ${e.first_name || ''}`.trim(); });
+
+    // 5. Filtrer
+    const logsUsine = clockLogs.filter(log => {
+      const rid = log.resource_id || log.relationships?.resource?.data?.id;
+      return idsUsine.has(rid);
+    });
+
+    // 6. Construire rapport
+    donneesRapport = logsUsine.map(log => {
+      const rid = log.resource_id || log.relationships?.resource?.data?.id;
+      const eid = log.employee_id || log.relationships?.employee?.data?.id;
+      const h = calculerHeures(log.started_at, log.ended_at);
+      return {
+        employe: nomEmployeParId[eid] || 'Inconnu',
+        projet: nomParId[rid] || 'Inconnu',
+        date: formatDate(log.started_at),
+        entree: formatHeure(log.started_at),
+        sortie: log.ended_at ? formatHeure(log.ended_at) : '—',
+        heures: h,
+        heuresNum: parseFloat(h) || 0
+      };
+    });
+
+    donneesRapport.sort((a, b) => a.employe.localeCompare(b.employe) || a.date.localeCompare(b.date));
+
+    cacherLoader();
+    afficherResultats(debut, fin, ressourcesUsine.length);
+
+  } catch (e) {
+    cacherLoader();
+    afficherErreur(e.message || 'Erreur inattendue.');
+  }
+  document.getElementById('btn-generer').disabled = false;
+}
+
+// ─── AFFICHAGE ───────────────────────────────────────────────────────────────
+function afficherResultats(debut, fin, nbProjets) {
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML = '';
+
+  const totalH = donneesRapport.reduce((s, r) => s + r.heuresNum, 0);
+  const employes = new Set(donneesRapport.map(r => r.employe));
+
+  document.getElementById('resume-grid').innerHTML = `
+    <div class="stat-box"><div class="stat-val">${donneesRapport.length}</div><div class="stat-lbl">Entrées de temps</div></div>
+    <div class="stat-box"><div class="stat-val">${employes.size}</div><div class="stat-lbl">Employés</div></div>
+    <div class="stat-box"><div class="stat-val">${totalH.toFixed(1)}h</div><div class="stat-lbl">Heures totales</div></div>
+  `;
+
+  const envLabel = envActuel === 'sandbox'
+    ? '<span class="env-badge env-sandbox">SANDBOX</span>'
+    : '<span class="env-badge env-prod">PRODUCTION</span>';
+  document.getElementById('titre-rapport').innerHTML = `${nbProjets} projet(s) · ${debut} au ${fin} ${envLabel}`;
+
+  if (donneesRapport.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--gris-texte);">Aucune entrée de temps pour cette période dans ces projets.</td></tr>`;
+  } else {
+    donneesRapport.forEach(row => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><strong>${esc(row.employe)}</strong></td>
+        <td class="projet">${esc(row.projet)}</td>
+        <td>${row.date}</td>
+        <td>${row.entree}</td>
+        <td>${row.sortie}</td>
+        <td class="heures">${row.heures}h</td>
+      `;
+      tbody.appendChild(tr);
+    });
+    const trTot = document.createElement('tr');
+    trTot.style.cssText = 'font-weight:700;background:var(--vert-clair);';
+    trTot.innerHTML = `<td colspan="5" style="text-align:right;padding:10px 12px;">TOTAL</td><td class="heures"><span class="badge-total">${totalH.toFixed(1)}h</span></td>`;
+    tbody.appendChild(trTot);
+  }
+
+  document.getElementById('section-results').classList.add('visible');
+  document.getElementById('btn-excel').style.display = donneesRapport.length > 0 ? 'inline-flex' : 'none';
+}
+
+// ─── EXPORT ──────────────────────────────────────────────────────────────────
+function exporterExcel() {
+  if (!donneesRapport.length) return;
+  const debut = document.getElementById('date-debut').value;
+  const fin = document.getElementById('date-fin').value;
+
+  const lignes = [
+    ['Employé', 'Projet (lieu de travail)', 'Date', 'Entrée', 'Sortie', 'Heures'],
+    ...donneesRapport.map(r => [r.employe, r.projet, r.date, r.entree, r.sortie, r.heuresNum])
+  ];
+
+  lignes.push([], ['RÉSUMÉ PAR EMPLOYÉ', '', '', '', '', '']);
+  const parEmploye = {};
+  donneesRapport.forEach(r => { parEmploye[r.employe] = (parEmploye[r.employe] || 0) + r.heuresNum; });
+  Object.entries(parEmploye).sort().forEach(([e, h]) => lignes.push([e, '', '', '', '', h]));
+  lignes.push(['TOTAL GÉNÉRAL', '', '', '', '', donneesRapport.reduce((s, r) => s + r.heuresNum, 0)]);
+
+  const csv = lignes.map(l => l.map(c => {
+    const s = String(c ?? '');
+    return s.includes(',') || s.includes('"') ? `"${s.replace(/"/g, '""')}"` : s;
+  }).join(',')).join('\n');
+
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `heures-usine_${debut}_${fin}.csv`;
+  a.click();
+}
+
+// ─── UTILITAIRES ─────────────────────────────────────────────────────────────
+function calculerHeures(d, f) {
+  if (!d || !f) return '?';
+  const h = (new Date(f) - new Date(d)) / 3600000;
+  return h > 0 ? h.toFixed(2) : '?';
+}
+function formatDate(iso) { return iso ? iso.substring(0, 10) : '—'; }
+function formatHeure(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' });
+}
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function debutMois() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`; }
+function finMois() { const d = new Date(); return new Date(d.getFullYear(), d.getMonth()+1, 0).toISOString().split('T')[0]; }
+function debutSemaine() { const d = new Date(); const j = d.getDay()||7; d.setDate(d.getDate()-j+1); return d.toISOString().split('T')[0]; }
+
+function setPeriode(type) {
+  const debut = document.getElementById('date-debut');
+  const fin = document.getElementById('date-fin');
+  if (type === 'semaine') { debut.value = debutSemaine(); fin.value = new Date().toISOString().split('T')[0]; }
+  else if (type === 'mois') { debut.value = debutMois(); fin.value = finMois(); }
+  else if (type === 'pp') { const d = new Date(); d.setDate(d.getDate()-13); debut.value = d.toISOString().split('T')[0]; fin.value = new Date().toISOString().split('T')[0]; }
+}
+
+function afficherLoader(msg) { document.getElementById('loader').classList.add('visible'); document.getElementById('loader-msg').textContent = msg; }
+function cacherLoader() { document.getElementById('loader').classList.remove('visible'); }
+function afficherErreur(msg) { const el = document.getElementById('alerte-erreur'); document.getElementById('alerte-erreur-msg').textContent = msg; el.classList.add('visible'); }
+function afficherInfo(msg) { const el = document.getElementById('alerte-info'); document.getElementById('alerte-info-msg').textContent = msg; el.classList.add('visible'); }
+function cacherAlertes() { document.getElementById('alerte-erreur').classList.remove('visible'); document.getElementById('alerte-info').classList.remove('visible'); }
+</script>
+</body>
+</html>
